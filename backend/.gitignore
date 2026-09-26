@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment variables (Crucial)
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database / SQLite (if used locally)
+*.db
+*.sqlite
+
+# IDE & System Files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
