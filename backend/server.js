@@ -34,7 +34,7 @@ app.use(
 );
 
 // ✅ Explicitly handle OPTIONS preflight for all routes (fixes 405)
-app.options('*', cors());
+app.options('/*splat', cors());
 
 app.use(express.json());
 
