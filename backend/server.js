@@ -9,27 +9,36 @@ const prisma = new PrismaClient();
 
 // 1. Production CORS Configuration
 const allowedOrigins = [
-  'http://localhost:5173', // Local Vite React server
-  process.env.FRONTEND_URL // Deployed Frontend URL (e.g., https://your-app.vercel.app)
-];
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://store-rating-app-wine.vercel.app', // ✅ Hardcoded as backup
+  process.env.FRONTEND_URL
+].filter(Boolean); // Remove undefined/null entries
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests) or if origin is in allowedOrigins list
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log('❌ Blocked by CORS:', origin);
         callback(new Error('Not allowed by CORS'));
       }
     },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // ✅ Fixes 405
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
 
+// ✅ Explicitly handle OPTIONS preflight for all routes (fixes 405)
+app.options('*', cors());
+
 app.use(express.json());
 
-// 2. Health Check Route (Render/Hosting platforms support checking if API is live)
+// 2. Health Check Route
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Store Rating System API is running smoothly!' });
 });
@@ -61,7 +70,7 @@ app.use('/api/admin', authenticate, authorize(['SYSTEM_ADMIN']), require('./rout
 app.use('/api/user', authenticate, authorize(['NORMAL_USER']), require('./routes/user')(prisma));
 app.use('/api/owner', authenticate, authorize(['STORE_OWNER']), require('./routes/owner')(prisma));
 
-// 3. Graceful Shutdown (Disconnect Prisma on Server Stop)
+// 3. Graceful Shutdown
 process.on('SIGINT', async () => {
   await prisma.$disconnect();
   process.exit(0);

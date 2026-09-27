@@ -4,55 +4,81 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  const hashedPasswordAdmin = await bcrypt.hash('Admin@1234', 10);
-  const hashedPasswordOwner = await bcrypt.hash('Owner@1234', 10);
-  const hashedPasswordUser = await bcrypt.hash('User@1234', 10);
+  console.log('Deleting old data...');
+  await prisma.rating.deleteMany({});
+  await prisma.store.deleteMany({});
+  await prisma.user.deleteMany({});
+
+  console.log('Seeding Demo Data...');
+  const hashedPassword = await bcrypt.hash('Password123!', 10);
 
   // 1. System Admin
-  await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
-    create: {
-      name: 'Alexander System Administrator',
-      email: 'admin@example.com',
-      address: '123 Admin Street, Tech City, NY',
-      password: hashedPasswordAdmin,
+  await prisma.user.create({
+    data: {
+      name: 'System Administrator',
+      email: 'admin@storerating.com',
+      password: hashedPassword,
       role: 'SYSTEM_ADMIN',
+      address: 'Main HQ, Silicon Valley',
     },
   });
 
   // 2. Store Owner
-  await prisma.user.upsert({
-    where: { email: 'owner@example.com' },
-    update: {},
-    create: {
-      name: 'Samantha Store Owner Manager',
-      email: 'owner@example.com',
-      address: '456 Commerce Boulevard, Retail Hub',
-      password: hashedPasswordOwner,
+  const owner = await prisma.user.create({
+    data: {
+      name: 'John Store Owner',
+      email: 'owner@storerating.com',
+      password: hashedPassword,
       role: 'STORE_OWNER',
+      address: '456 Business Ave, NY',
     },
   });
 
   // 3. Normal User
-  await prisma.user.upsert({
-    where: { email: 'user@example.com' },
-    update: {},
-    create: {
-      name: 'Christopher Customer User',
-      email: 'user@example.com',
-      address: '789 Residential Avenue, Suburban Area',
-      password: hashedPasswordUser,
+  const user = await prisma.user.create({
+    data: {
+      name: 'Alice Normal User',
+      email: 'user@storerating.com',
+      password: hashedPassword,
       role: 'NORMAL_USER',
+      address: '789 Residential St, CA',
     },
   });
 
-  console.log('✅ Demo Users Seeded Successfully!');
+  // 4. Demo Stores
+  const store1 = await prisma.store.create({
+    data: {
+      name: 'Tech Zone Superstore',
+      email: 'techzone@store.com',
+      address: '101 Innovation Park',
+      ownerId: owner.id,
+    },
+  });
+
+  await prisma.store.create({
+    data: {
+      name: 'Urban Fresh Market',
+      email: 'urban@store.com',
+      address: '202 Market Square',
+      ownerId: owner.id,
+    },
+  });
+
+  // 5. Demo Rating (Fixed to ratingValue)
+  await prisma.rating.create({
+    data: {
+      ratingValue: 5,
+      userId: user.id,
+      storeId: store1.id,
+    },
+  });
+
+  console.log('Demo Data Seeded Successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('Seeding Error:', e);
     process.exit(1);
   })
   .finally(async () => {
